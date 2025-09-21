@@ -1,0 +1,2 @@
+*.pyc
+/dataset.evaluation/velocities_prediction/
