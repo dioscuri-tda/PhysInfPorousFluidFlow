@@ -7,11 +7,8 @@ This repository contains the codebase for the paper
 *Physics-informed convolutional neural networks for fluid flow through porous media*
 
 ## Model
-The weights of the trained champion model, i.e. ResNet101 as indicated by Table 2 in the manuscript, is available HERE.
-After downloading put the `best_model.pth` file into `models/` directory. The MD5sum for the model is
-```
-0c673bf4bafe997a026f964f82521669  best_model.pth
-```
+The weights of the trained champion model, i.e. ResNet101 as indicated by Table 2 in the manuscript, is available in directory `models/`.
+Using this weights enables to run own inference and reproduce results from the paper. 
 
 ## Dataset
 Here we publish the dataset of randomly deposited circles and squares, Pcirce=0.5. 
@@ -45,3 +42,6 @@ The notebook `notebooks/VisualizePrediction.ipynb` shows how reproduce all the m
 It provides also visualization of the structures, solutions of the LBM method and corresponding predictions of the model.
 
 ![Header](images/prediction_squares.png)
+
+### Credits
+Some CNN implementations used in this repo modifies the code from [mkisantal/backboned-unet](https://github.com/mkisantal/backboned-unet)  repository.
