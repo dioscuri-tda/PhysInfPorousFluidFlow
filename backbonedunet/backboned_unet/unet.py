@@ -6,6 +6,12 @@ from torch.nn import functional as F
 import numpy as np
 import cv2
 
+def _load_torchvision_model(factory, pretrained=False):
+    """Support both legacy `pretrained=` and newer `weights=` torchvision APIs."""
+    try:
+        return factory(weights='DEFAULT' if pretrained else None)
+    except (TypeError, ValueError):
+        return factory(pretrained=pretrained)
 
 def get_backbone(name, weigths='random'):
 
@@ -20,34 +26,41 @@ def get_backbone(name, weigths='random'):
 
     # loading backbone model
     if name == 'resnet18':
-        backbone = models.resnet18(pretrained=pretrained)
+        backbone = _load_torchvision_model(models.resnet18, pretrained=pretrained)
     elif name == 'resnet34':
-        backbone = models.resnet34(pretrained=pretrained)
+        backbone = _load_torchvision_model(models.resnet34, pretrained=pretrained)
     elif name == 'resnet50':
-        backbone = models.resnet50(pretrained=pretrained)
+        backbone = _load_torchvision_model(models.resnet50, pretrained=pretrained)
     elif name == 'resnet101':
-        backbone = models.resnet101(pretrained=pretrained)
+        backbone = _load_torchvision_model(models.resnet101, pretrained=pretrained)
     elif name == 'resnet152':
-        backbone = models.resnet152(pretrained=pretrained)
+        backbone = _load_torchvision_model(models.resnet152, pretrained=pretrained)
     elif name == 'vgg16':
-        backbone = models.vgg16_bn(pretrained=pretrained).features
+        backbone = _load_torchvision_model(models.vgg16_bn, pretrained=pretrained).features
     elif name == 'vgg19':
-        backbone = models.vgg19_bn(pretrained=pretrained).features
-    # elif name == 'inception_v3':
-    #     backbone = models.inception_v3(pretrained=pretrained, aux_logits=False)
+        backbone = _load_torchvision_model(models.vgg19_bn, pretrained=pretrained).features
     elif name == 'densenet121':
-        backbone = models.densenet121(pretrained=pretrained).features
+        backbone = _load_torchvision_model(models.densenet121, pretrained=pretrained).features
     elif name == 'densenet161':
-        backbone = models.densenet161(pretrained=pretrained).features
+        backbone = _load_torchvision_model(models.densenet161, pretrained=pretrained).features
     elif name == 'densenet169':
-        backbone = models.densenet169(pretrained=pretrained).features
+        backbone = _load_torchvision_model(models.densenet169, pretrained=pretrained).features
     elif name == 'densenet201':
-        backbone = models.densenet201(pretrained=pretrained).features
-    elif name == 'unet_encoder':
-        from unet_backbone import UnetEncoder
-        backbone = UnetEncoder(3)
-    else:
-        raise NotImplemented('{} backbone model is not implemented so far.'.format(name))
+        backbone = _load_torchvision_model(models.densenet201, pretrained=pretrained).features
+    elif name == 'efficientnet_b2':
+        backbone = _load_torchvision_model(models.efficientnet_b2, pretrained=pretrained).features
+    elif name == 'efficientnet_v2_s':
+        backbone = _load_torchvision_model(models.efficientnet_v2_s, pretrained=pretrained).features
+    elif name == 'mobilenet_v3_small':
+        backbone = _load_torchvision_model(models.mobilenet_v3_small, pretrained=pretrained).features
+    elif name == 'mobilenet_v3_large':
+        backbone = _load_torchvision_model(models.mobilenet_v3_large, pretrained=pretrained).features
+    elif name == 'convnext_tiny':
+        backbone = _load_torchvision_model(models.convnext_tiny, pretrained=pretrained).features
+    elif name == 'convnext_small':
+        backbone = _load_torchvision_model(models.convnext_small, pretrained=pretrained).features
+    elif name == 'convnext_base':
+        backbone = _load_torchvision_model(models.convnext_base, pretrained=pretrained).features
 
     # specifying skip feature and output names
     if name.startswith('resnet'):
@@ -60,12 +73,27 @@ def get_backbone(name, weigths='random'):
     elif name == 'vgg19':
         feature_names = ['5', '12', '25', '38', '51']
         backbone_output = '52'
-    # elif name == 'inception_v3':
-    #     feature_names = [None, 'Mixed_5d', 'Mixed_6e']
-    #     backbone_output = 'Mixed_7c'
     elif name.startswith('densenet'):
         feature_names = [None, 'relu0', 'denseblock1', 'denseblock2', 'denseblock3']
         backbone_output = 'denseblock4'
+    elif name == 'efficientnet_b2':
+        feature_names = [None, '1', '2', '3', '5']
+        backbone_output = '8'
+    elif name == 'efficientnet_v2_s':
+        feature_names = [None, '1', '2', '3', '5']
+        backbone_output = '7'
+    elif name == 'mobilenet_v3_small':
+        feature_names = [None, '0', '1', '3', '8']
+        backbone_output = '12'
+    elif name == 'mobilenet_v3_large':
+        feature_names = [None, '1', '3', '6', '12']
+        backbone_output = '16'
+    elif name.startswith('convnext'):
+        # ConvNeXt downsamples in the stem (x4) and then between stages, so it has
+        # skips at 56x56, 28x28 and 14x14 for a 224x224 input. Two leading None
+        # entries keep the decoder depth compatible with the existing U-Net.
+        feature_names = [None, None, '0', '3', '5']
+        backbone_output = '7'
     elif name == 'unet_encoder':
         feature_names = ['module1', 'module2', 'module3', 'module4']
         backbone_output = 'module5'
@@ -232,7 +260,8 @@ class Unet(nn.Module):
 
         x = torch.zeros(1, 3, 224, 224)
         has_fullres_features = self.backbone_name.startswith('vgg') or self.backbone_name == 'unet_encoder'
-        channels = [] if has_fullres_features else [0]  # only VGG has features at full resolution
+        num_empty_skips = self.shortcut_features.count(None)
+        channels = [] if has_fullres_features else [0] * num_empty_skips
 
         # forward run in backbone to count channels (dirty solution but works for *any* Module)
         for name, child in self.backbone.named_children():

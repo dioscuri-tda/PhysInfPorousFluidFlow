@@ -33,6 +33,13 @@ BACKBONES = [
     "densenet161",
     "densenet169",
     "densenet201",
+    "efficientnet_b2",
+    "efficientnet_v2_s",
+    "mobilenet_v3_small",
+    "mobilenet_v3_large",
+    "convnext_tiny",
+    "convnext_small",
+    "convnext_base",
 ]
 
 
@@ -270,7 +277,8 @@ def parse_command_line_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", type=str, required=True, help="Name of the training experiment")
     parser.add_argument(
-        "--backbone_name", choices=BACKBONES, default="resnet18", help="Name of the training experiment"
+        "--backbone", "--backbone_name", dest="backbone_name", choices=BACKBONES, default="resnet18",
+        help="Backbone encoder name"
     )
     parser.add_argument(
         "--structures_dirpath", type=str, required=True, help="Where structure files are kept in .gif format"
