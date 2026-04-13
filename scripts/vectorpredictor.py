@@ -17,8 +17,8 @@ from srcvector.utils import experiment_name_with_timestamp, create_experiment_di
 from srcvector.eval import evaluate
 from backbonedunet.backboned_unet import Unet
 
-torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
 
 BACKBONES = [
     "resnet18",
