@@ -2,9 +2,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
-from torch.nn import functional as F
-import numpy as np
-import cv2
+
 
 def _load_torchvision_model(factory, pretrained=False):
     """Support both legacy `pretrained=` and newer `weights=` torchvision APIs."""
@@ -12,6 +10,10 @@ def _load_torchvision_model(factory, pretrained=False):
         return factory(weights='DEFAULT' if pretrained else None)
     except (TypeError, ValueError):
         return factory(pretrained=pretrained)
+from torch.nn import functional as F
+import numpy as np
+import cv2
+
 
 def get_backbone(name, weigths='random'):
 
@@ -39,6 +41,8 @@ def get_backbone(name, weigths='random'):
         backbone = _load_torchvision_model(models.vgg16_bn, pretrained=pretrained).features
     elif name == 'vgg19':
         backbone = _load_torchvision_model(models.vgg19_bn, pretrained=pretrained).features
+    # elif name == 'inception_v3':
+    #     backbone = models.inception_v3(pretrained=pretrained, aux_logits=False)
     elif name == 'densenet121':
         backbone = _load_torchvision_model(models.densenet121, pretrained=pretrained).features
     elif name == 'densenet161':
@@ -61,6 +65,11 @@ def get_backbone(name, weigths='random'):
         backbone = _load_torchvision_model(models.convnext_small, pretrained=pretrained).features
     elif name == 'convnext_base':
         backbone = _load_torchvision_model(models.convnext_base, pretrained=pretrained).features
+    elif name == 'unet_encoder':
+        from unet_backbone import UnetEncoder
+        backbone = UnetEncoder(3)
+    else:
+        raise NotImplemented('{} backbone model is not implemented so far.'.format(name))
 
     # specifying skip feature and output names
     if name.startswith('resnet'):
@@ -73,6 +82,9 @@ def get_backbone(name, weigths='random'):
     elif name == 'vgg19':
         feature_names = ['5', '12', '25', '38', '51']
         backbone_output = '52'
+    # elif name == 'inception_v3':
+    #     feature_names = [None, 'Mixed_5d', 'Mixed_6e']
+    #     backbone_output = 'Mixed_7c'
     elif name.startswith('densenet'):
         feature_names = [None, 'relu0', 'denseblock1', 'denseblock2', 'denseblock3']
         backbone_output = 'denseblock4'
