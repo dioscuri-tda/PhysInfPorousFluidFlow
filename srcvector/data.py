@@ -16,8 +16,8 @@ def read_velocity(filepath, velocity_scale=1000):
 def read_structure(filepath):
     img = Image.open(filepath)
     img_palette = img.getpalette()
-    img = np.array(img).astype(np.float32)
-    if img_palette[0] == 0:
+    img = (np.array(img) > 0).astype(np.float32)
+    if img_palette is not None and img_palette[0] == 0:
         print(f'Inversing color palette for {filepath}')
         img = 1-img
     return img
@@ -78,6 +78,7 @@ class PorousDataset(Dataset):
         self.velocities = []
         self.augmentations = augmentations
         # read structures
+        print(filelist)
         for structure_filename in tqdm(filelist, desc='Reading structures'):
             self.structures.append(self._read_structure(filename=structure_filename))
         # read velocities
