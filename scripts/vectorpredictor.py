@@ -15,32 +15,10 @@ from srcvector.model import train_model
 from srcvector.plots import plot_sample_predictions, vtk_sample_predictions
 from srcvector.utils import experiment_name_with_timestamp, create_experiment_dir, dict_to_json
 from srcvector.eval import evaluate
-from backbonedunet.backboned_unet import Unet
+from srcvector.architectures import BACKBONES, build_model
 
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
-
-BACKBONES = [
-    "resnet18",
-    "resnet34",
-    "resnet50",
-    "resnet101",
-    "resnet152",
-    "vgg16",
-    "vgg19",
-    "inception_v3",
-    "densenet121",
-    "densenet161",
-    "densenet169",
-    "densenet201",
-    "efficientnet_b2",
-    "efficientnet_v2_s",
-    "mobilenet_v3_small",
-    "mobilenet_v3_large",
-    "convnext_tiny",
-    "convnext_small",
-    "convnext_base",
-]
 
 
 def run_experiment(args):
@@ -130,11 +108,10 @@ def run_experiment(args):
     }
 
     # start training
-    model = Unet(backbone_name=backbone_name, classes=2, smooth_mode=smooth_mode, smooth_kernel_size=smooth_kernel_size,
-                 final_conv_kernel_size=final_conv_kernel_size, weigths=weigths).to(device)
+    model = build_model(args, device=device)
     if weigths not in ['random', 'pretrained']:
         print(f">> Loading weights from file: {weigths}")
-        model.load_state_dict(torch.load(weigths, weights_only=True))
+        model.load_state_dict(torch.load(weigths, weights_only=True, map_location=device))
         print(f">> Weights loaded")
 
     optimizer_ft = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
@@ -313,6 +290,11 @@ def parse_command_line_args():
     parser.add_argument("--max_predictions_written", type=int, default=-1)
     parser.add_argument("--seed", type=int, default=100)
     parser.add_argument("--weights", type=str, default="random")
+
+    parser.add_argument("--fno_modes", type=int, default=16,
+                        help="Number of Fourier modes per spatial dimension for FNO")
+    parser.add_argument("--fno_width", type=int, default=48, help="Hidden channel width for FNO")
+    parser.add_argument("--fno_n_layers", type=int, default=4, help="Number of spectral blocks for FNO")
     return vars(parser.parse_args())
 
 def set_seeds(seed):

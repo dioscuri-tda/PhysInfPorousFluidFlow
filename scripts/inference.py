@@ -11,8 +11,7 @@ from torch.utils.data import DataLoader
 from srcvector.data import PorousDataset, PeriodicWrap
 from srcvector.utils import experiment_name_with_timestamp, create_experiment_dir, dict_to_json
 from srcvector.eval import evaluate
-from backbonedunet.backboned_unet import Unet
-from vectorpredictor import BACKBONES
+from srcvector.architectures import build_model
 
 # set seeds
 random.seed(100)
@@ -69,8 +68,17 @@ def run_inference(args):
     print(f"Total number of files: {len(filelist)}")
 
     # load model
-    model = Unet(backbone_name=backbone_name, classes=2, smooth_mode=smooth_mode, smooth_kernel_size=smooth_kernel_size,
-                 final_conv_kernel_size=final_conv_kernel_size).to(device)
+    model_args = {
+        'backbone_name': backbone_name,
+        'smooth_mode': smooth_mode,
+        'smooth_kernel_size': smooth_kernel_size,
+        'final_conv_kernel_size': final_conv_kernel_size,
+        'weights': 'random',
+        'fno_modes': experiment_params.get('fno_modes', 16),
+        'fno_width': experiment_params.get('fno_width', 48),
+        'fno_n_layers': experiment_params.get('fno_n_layers', 4),
+    }
+    model = build_model(model_args, device=device)
 
     if device_string == "cpu":
         model.load_state_dict(torch.load(model_path, weights_only=True, map_location='cpu'))
